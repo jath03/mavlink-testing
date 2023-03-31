@@ -1,4 +1,5 @@
 from pymavlink import mavutil
+from contextlib import nullcontext
 
 CONNECTION_STRING = "udpin:0.0.0.0:14550"
 DRONE_IDS = [3, 4]
@@ -35,3 +36,20 @@ def for_all_drones(f):
             f(connection, *args, **kwargs)
 
     return wrapped
+
+
+def send_command(connection, cmd, confirm, p1=0, p2=0, p3=0, p4=0, p5=0, p6=0, p7=0, lock=nullcontext(), ack=True):
+    if type(cmd) == str:
+        try:
+            cmd = getattr(mavutil.mavlink, cmd)
+        except AttributeError:
+            raise AttributeError(f"Unknown command `{cmd}`")
+    with lock:
+        connection.mav.command_long_send(
+            connection.target_system,
+            connection.target_component,
+            cmd,
+            confirm, p1, p2, p3, p4, p5, p6, p7
+        )
+        if ack:
+            recv_ack(connection)
