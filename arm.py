@@ -1,23 +1,38 @@
 from pymavlink import mavutil
-from utils import connect, recv_ack
+from utils import connect, recv_ack, for_all_drones
 import time
 
-def arm(connection):
-    connection.mav.command_long_send(connection.target_system, connection.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0)
-    recv_ack(connection)    
 
-
-def disarm(connection):
-    connection.mav.command_long_send(connection.target_system, connection.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 0, 0, 0, 0, 0, 0, 0)    
+@for_all_drones
+def arm(connection, force: bool = False):
+    connection.mav.command_long_send(
+        connection.target_system,
+        connection.target_component,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+        0, 1, 21196 if force else 0, 0, 0, 0, 0, 0
+    )
     recv_ack(connection)
+    print("Armed drone", connection.target_system)
+
+
+@for_all_drones
+def disarm(connection, force: bool = False):
+    connection.mav.command_long_send(
+        connection.target_system,
+        connection.target_component,
+        mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+        0, 0, 21196 if force else 0, 0, 0, 0, 0, 0
+    )
+    recv_ack(connection)
+    print("Disarmed drone", connection.target_system)
+
 
 def main():
-    connections = connect()
-    
-    map(arm, connections)
+    connection = connect()
+
+    arm(connection)
     time.sleep(10)
-    map(disarm, connections)
-    
+    disarm(connection)
 
 
 if __name__ == "__main__":
